@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:flutter_sqlite/ClientModel.dart';
 import 'package:path/path.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:sqflite/sqflite.dart';
@@ -30,4 +31,76 @@ class DBProvider{
           ")"));
       });
   }
+
+  newClient(Client newClient) async{
+    final db = await database;
+    var res = await db.rawInsert(
+        "INSERT Into Client (id,firstName)"
+        " VALUES (${newClient.id},${newClient.firstName})");
+    return res;
+  }
+  newClient2(Client newClient) async{
+    final db = await database;
+    var res = await db.insert("Client", newClient.toMap());
+    return res;
+  }
+  newClient3(Client newClient) async {
+    final db = await database;
+    var table = await db.rawQuery("SELECT MAX(id)+1 as id FROM Client");
+    int id = table.first["id"];
+    //insert to the table using the new id
+    var raw = await db.rawInsert(
+        "INSERT Into Client (id,firstName,lastName,blocked)"
+            " VALUES (?,?,?,?)",
+        [id, newClient.firstName, newClient.lastName, newClient.blocked]);
+    return raw;
+  }
+  getClient(int id) async{
+    final db = await database;
+    var res = await db.query("Client", where: "id=?", whereArgs: [id]);
+    return res.isNotEmpty? Client.fromMap(res.first) : Null;
+  }
+
+  getAllClients()async {
+    final db = await database;
+    var res = await db.query("Client");
+    List<Client> list =
+    res.isNotEmpty ? res.map((c) => Client.fromMap(c)).toList() : [];
+    return list;
+  }
+  getBlockedClients() async {
+    final db = await database;
+    var res = await db.rawQuery("SELECT * FROM Client WHERE blocked=1");
+    List<Client> list =
+    res.isNotEmpty ? res.toList().map((c) => Client.fromMap(c)) : null;
+    return list;
+  }
+
+
+  updateClient(Client newClient) async {
+    final db = await database;
+    var res = await db.update("Client", newClient.toMap(),
+        where: "id = ?", whereArgs: [newClient.id]);
+    return res;
+  }
+  blockOrUnblock(Client client) async {
+    final db = await database;
+    Client blocked = Client(
+        id: client.id,
+        firstName: client.firstName,
+        lastName: client.lastName,
+        blocked: !client.blocked);
+    var res = await db.update("Client", blocked.toMap(),
+        where: "id = ?", whereArgs: [client.id]);
+    return res;
+  }
+  deleteClient(int id) async {
+    final db = await database;
+    return db.delete("Client", where: "id = ?", whereArgs: [id]);
+  }
+  deleteAll() async {
+    final db = await database;
+    db.rawDelete("Delete * from Client");
+  }
+
 }
