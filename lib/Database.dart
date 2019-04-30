@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:async';
 
 import 'package:flutter_sqlite/ClientModel.dart';
 import 'package:path/path.dart';
@@ -32,11 +33,11 @@ class DBProvider{
       });
   }
 
-  newClient(Client newClient) async{
+  newClient3(Client newClient) async{
     final db = await database;
     var res = await db.rawInsert(
         "INSERT Into Client (id,firstName)"
-        " VALUES (${newClient.id},${newClient.firstName})");
+        " VALUES (?,?,?,?)", [1 , newClient.firstName, newClient.lastName, newClient.blocked]);
     return res;
   }
   newClient2(Client newClient) async{
@@ -44,7 +45,7 @@ class DBProvider{
     var res = await db.insert("Client", newClient.toMap());
     return res;
   }
-  newClient3(Client newClient) async {
+  newClient(Client newClient) async {
     final db = await database;
     var table = await db.rawQuery("SELECT MAX(id)+1 as id FROM Client");
     int id = table.first["id"];
@@ -61,14 +62,14 @@ class DBProvider{
     return res.isNotEmpty? Client.fromMap(res.first) : Null;
   }
 
-  getAllClients()async {
+  Future<List<Client> > getAllClients()async {
     final db = await database;
     var res = await db.query("Client");
     List<Client> list =
     res.isNotEmpty ? res.map((c) => Client.fromMap(c)).toList() : [];
     return list;
   }
-  getBlockedClients() async {
+  Future<List<Client>>  getBlockedClients() async {
     final db = await database;
     var res = await db.rawQuery("SELECT * FROM Client WHERE blocked=1");
     List<Client> list =
